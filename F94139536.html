@@ -1,0 +1,187 @@
+
+<html>
+<head>
+<meta charset="utf-8">
+<title>李六與他的快樂小伙伴</title>
+</head>
+<body>
+<h1 style='text-align:center'>李六與他的快樂小伙伴</h1>
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_166a2630a2ca04e1d8a362ec658ac125 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_166a2630a2ca04e1d8a362ec658ac125" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_166a2630a2ca04e1d8a362ec658ac125 = L.map(
+                "map_166a2630a2ca04e1d8a362ec658ac125",
+                {
+                    center: [23.23301377313801, 120.18176845083683],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 12,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_82136a4150d294fbeeb3933623accaee = L.tileLayer(
+                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 19,
+  "maxNativeZoom": 19,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors",
+  "subdomains": "abc",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_82136a4150d294fbeeb3933623accaee.addTo(map_166a2630a2ca04e1d8a362ec658ac125);
+        
+    
+            var marker_998e16c959cbbe5a453908bbbbd6df20 = L.marker(
+                [23.23301377313801, 120.18176845083683],
+                {
+}
+            ).addTo(map_166a2630a2ca04e1d8a362ec658ac125);
+        
+    
+            var icon_887747fdaf1e1e3b699c7bd3513ba335 = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "red",
+  "iconColor": "white",
+  "icon": "star",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_e325432323157a8551cbbbd829c7559b = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_916cc7aa42a3f7d2c63848fc22275ca2 = $(`<div id="html_916cc7aa42a3f7d2c63848fc22275ca2" style="width: 100.0%; height: 100.0%;"><b>李六</b></div>`)[0];
+                popup_e325432323157a8551cbbbd829c7559b.setContent(html_916cc7aa42a3f7d2c63848fc22275ca2);
+            
+        
+
+        marker_998e16c959cbbe5a453908bbbbd6df20.bindPopup(popup_e325432323157a8551cbbbd829c7559b)
+        ;
+
+        
+    
+    
+                marker_998e16c959cbbe5a453908bbbbd6df20.setIcon(icon_887747fdaf1e1e3b699c7bd3513ba335);
+            
+    
+            var marker_15b262718d00b7b66fbe69e1173b3e2f = L.marker(
+                [23.037870362322117, 120.30823532199366],
+                {
+}
+            ).addTo(map_166a2630a2ca04e1d8a362ec658ac125);
+        
+    
+            var icon_90455dc8552a5a09040c435d4ddd9b5f = L.AwesomeMarkers.icon(
+                {
+  "markerColor": "blue",
+  "iconColor": "white",
+  "icon": "user",
+  "prefix": "glyphicon",
+  "extraClasses": "fa-rotate-0",
+}
+            );
+        
+    
+        var popup_805b2862a44e6fc9bd50f9a56186e990 = L.popup({
+  "maxWidth": "100%",
+});
+
+        
+            
+                var html_7cb214dda22735d746e7e972ec70498d = $(`<div id="html_7cb214dda22735d746e7e972ec70498d" style="width: 100.0%; height: 100.0%;">梁炳元</div>`)[0];
+                popup_805b2862a44e6fc9bd50f9a56186e990.setContent(html_7cb214dda22735d746e7e972ec70498d);
+            
+        
+
+        marker_15b262718d00b7b66fbe69e1173b3e2f.bindPopup(popup_805b2862a44e6fc9bd50f9a56186e990)
+        ;
+
+        
+    
+    
+                marker_15b262718d00b7b66fbe69e1173b3e2f.setIcon(icon_90455dc8552a5a09040c435d4ddd9b5f);
+            
+</script>
+</html>
+</body>
+</html>
