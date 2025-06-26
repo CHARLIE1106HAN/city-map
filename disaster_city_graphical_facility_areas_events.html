@@ -1,0 +1,1015 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>防災城市模擬器 - 圖像化版本</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&family=Baloo+2:wght@700;800&display=swap');
+        :root {
+            --font-main: 'Noto Sans TC', sans-serif;
+            --font-display: 'Baloo 2', cursive;
+            --sky-top: #87CEEB;
+            --sky-bottom: #B0E0E6;
+            --plains-color: #8BC34A;
+            --mountains-color: #A1887F;
+            --ground-color: #D2B48C;
+            --action-color: #FF7043;
+            --action-hover-color: #F4511E;
+            --panel-bg: #FFFBE6;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            font-family: var(--font-main);
+            overflow: hidden;
+        }
+
+        /* --- 主要遊戲世界 --- */
+        #game-world {
+            width: 100%; height: 100%;
+            background: linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-bottom) 60%, var(--plains-color) 60%, var(--ground-color) 100%);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* --- 頂部狀態列 --- */
+        #top-bar {
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(0,0,0,0.1);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+        .top-stat {
+            font-family: var(--font-display);
+            font-size: 32px;
+            font-weight: 800;
+            color: white;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* --- 遊戲場景區域 --- */
+        #scene {
+            flex-grow: 1;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end; /* 對齊底部 */
+            padding: 20px;
+            padding-bottom: 120px; /* 為控制按鈕留出空間 */
+        }
+        .area-container {
+            width: 45%;
+            height: 80%;
+            display: flex;
+            flex-direction: column;
+        }
+        .area-header {
+            font-family: var(--font-display);
+            font-size: 40px;
+            text-align: center;
+            color: white;
+            padding: 10px;
+            border-radius: 20px 20px 0 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        #plains-container .area-header { background-color: var(--plains-color); }
+        #mountains-container .area-header { background-color: var(--mountains-color); }
+        
+        .buildings-display {
+            flex-grow: 1;
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 0 0 20px 20px;
+            padding: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-content: flex-start;
+            overflow-y: auto;
+        }
+        .building-icon, .facility-icon {
+            font-size: 36px; /* Emojis as icons */
+            transition: transform 0.2s ease;
+        }
+        .building-icon:hover, .facility-icon:hover {
+            transform: scale(1.2);
+        }
+
+        .area-stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            margin-top: -20px;
+            position: relative;
+        }
+        .stat-bubble {
+            background: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* --- 控制按鈕 --- */
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            padding: 10px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 30px;
+        }
+        .control-button {
+            padding: 15px 40px;
+            font-family: var(--font-display);
+            font-size: 24px;
+            border: none;
+            border-radius: 50px;
+            color: white;
+            background-color: var(--action-color);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .control-button:hover {
+            background-color: var(--action-hover-color);
+            transform: translateY(-3px);
+        }
+        #next-month-button { background-color: #4CAF50; }
+        #next-month-button:hover { background-color: #45a049; }
+
+
+        /* --- 彈出視窗 (沿用，稍作美化) --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000;
+            opacity: 0; visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        .modal-overlay.visible {
+            opacity: 1; visibility: visible;
+        }
+        .modal-content {
+            background: var(--panel-bg);
+            padding: 30px; border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 80%; max-width: 600px;
+            max-height: 80vh;
+            display: flex; flex-direction: column;
+            transform: scale(0.8);
+            transition: all 0.3s ease;
+        }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        .modal-content h2 { font-family: var(--font-display); font-size: 32px; margin-top: 0; text-align: center; }
+        .modal-body { overflow-y: auto; padding: 10px; }
+        .modal-close-button { align-self: center; margin-top: 20px; padding: 10px 30px; font-size: 18px; border-radius: 30px; background: #888; color: white; border: none; cursor: pointer; }
+        
+        /* ... [其他彈出視窗樣式與前一版相同] ... */
+        .build-category { margin-bottom: 20px; }
+        .build-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; background: #fff; border-radius: 8px; margin-bottom: 8px; }
+        .build-item-name { font-size: 18px; font-weight: bold; }
+        .build-item-cost { color: #888; }
+        .build-controls { display: flex; align-items: center; gap: 10px; }
+        .build-controls input { width: 50px; text-align: center; font-size: 16px; padding: 5px;}
+        .build-controls button, .upgrade-button { padding: 5px 15px; font-size: 16px; background: var(--action-color); color: white; border: none; border-radius: 5px; cursor: pointer; }
+        #event-log { list-style: none; padding: 0; background: #fff; border-radius: 10px; padding: 15px; }
+        #event-log li { padding: 8px 0; border-bottom: 1px solid #eee; }
+        #event-log li:last-child { border-bottom: none; }
+
+        /* 新增的修復按鈕樣式 */
+        .repair-button {
+            background-color: #007bff; /* 藍色 */
+        }
+        .repair-button:hover {
+            background-color: #0056b3;
+        }
+        /* 新增的區域選擇按鈕樣式 */
+        .area-select-button {
+            background-color: #6c757d;
+            margin-left: 5px;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        .area-select-button:hover {
+            background-color: #5a6268;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="game-world">
+        <div id="top-bar">
+            <div id="month-stat" class="top-stat">📅 第 0 月</div>
+            <div id="population-stat" class="top-stat">🧑‍🤝‍🧑 總人口: 100</div>
+            <div id="gold-stat" class="top-stat">💰 金幣: 20000</div>
+            <div id="debt-stat" class="top-stat" style="display:none;">💸 債務: 0</div>
+        </div>
+
+        <div id="scene">
+            <div id="plains-container" class="area-container">
+                <div class="area-header">🏞️ 平地區</div>
+                <div class="area-stats">
+                    <div class="stat-bubble">🧑‍🤝‍🧑 <span id="plains-population">60</span></div>
+                    <div class="stat-bubble">😵 <span id="plains-homeless">0</span></div>
+                    <div class="stat-bubble">🤒 <span id="plains-sick">0</span></div>
+                    <div class="stat-bubble">🏚️ <span id="plains-damaged-houses">0</span></div>
+                </div>
+                <div id="plains-buildings" class="buildings-display"></div>
+            </div>
+
+            <div id="mountains-container" class="area-container">
+                <div class="area-header">🏔️ 山地區</div>
+                <div class="area-stats">
+                    <div class="stat-bubble">🧑‍🤝‍🧑 <span id="mountains-population">40</span></div>
+                    <div class="stat-bubble">😵 <span id="mountains-homeless">0</span></div>
+                    <div class="stat-bubble">🤒 <span id="mountains-sick">0</span></div>
+                    <div class="stat-bubble">🏚️ <span id="mountains-damaged-houses">0</span></div>
+                </div>
+                <div id="mountains-buildings" class="buildings-display"></div>
+            </div>
+        </div>
+
+        <div id="controls">
+            <button id="build-button" class="control-button">⚒️ 建造</button>
+            <button id="loan-button" class="control-button" style="background-color: #9C27B0;">💸 借貸</button>
+            <button id="next-month-button" class="control-button">➡️ 下一月</button>
+        </div>
+    </div>
+    
+    <div id="build-modal" class="modal-overlay"></div>
+    <div id="event-modal" class="modal-overlay"></div>
+    <div id="instructions-modal" class="modal-overlay visible"></div>
+    <div id="loan-modal" class="modal-overlay"></div>
+
+    <script>
+    let gameState = {};
+
+    const facilityMaster = {
+        "醫院": { id: "hospital", cost: 5000, name: "醫院", icon: "🏥", area: "any" },
+        "擋土牆": { id: "retainingWall", cost: 4000, name: "擋土牆", icon: "🧱", area: "mountain" },
+        "水壩": { id: "dam", cost: 4000, name: "水壩", icon: " hydroelectric_dam", area: "plains" },
+        "地震預警系統": { id: "earthquakeWarning", cost: 3500, name: "地震預警系統", icon: "📡", area: "any" },
+        "礦場": { id: "mine", cost: 4000, name: "礦場", icon: "⛏️", area: "mountain" },
+        "基礎農田": { id: "farm", cost: 3000, name: "基礎農田", icon: "🌾", area: "plains" },
+        "避難中心": { id: "shelter", cost: 1500, name: "避難中心", icon: "⛺", area: "any" }
+    };
+    const houseMaster = {
+        "房屋1": { id: "house1", cost: 1000, name: "一級房屋", icon: "🏠" },
+        "房屋2": { id: "house2", cost: 2000, name: "二級房屋", icon: "🏡" },
+        "房屋3": { id: "house3", cost: 3000, name: "三級房屋", icon: "🏘️" }
+    };
+
+    function resetGame() {
+        gameState = {
+            gold: 20000,
+            currentMonth: 0,
+            rainCount: 0,
+            majorDisasterMonth: Math.floor(Math.random() * 12) + 1,
+            majorDisasterType: ["火山爆發", "隕石掉落", "超級颱風"][Math.floor(Math.random() * 3)],
+            buildings: {
+                mountain: { house1: 10, house2: 0, house3: 0 },
+                plains: { house1: 10, house2: 0, house3: 0 }
+            },
+            population: { mountain: 40, plains: 60 },
+            homeless: { mountain: 0, plains: 0 },
+            damagedHouses: { mountain: 0, plains: 0 },
+            // 設施現在也按區域分類
+            facilities: {
+                mountain: { hospital: 0, retainingWall: 0, dam: 0, earthquakeWarning: 0, mine: 0, farm: 0, shelter: 0 },
+                plains: { hospital: 0, retainingWall: 0, dam: 0, earthquakeWarning: 0, mine: 0, farm: 0, shelter: 0 },
+                global: { hospital: 0, earthquakeWarning: 0, shelter: 0 } // 用於計算全域效果的設施總數
+            },
+            sickness: { mountain: [], plains: [] },
+            inTreatment: [],
+            eventLog: [],
+            debt: 0,
+            loanInterestRate: 0.05,
+            loanLimit: 10000
+        };
+        document.getElementById('build-modal').innerHTML = `
+            <div class="modal-content"><h2>建造與升級選單</h2><div class="modal-body" id="build-modal-body"></div><button class="modal-close-button">關閉</button></div>`;
+        document.getElementById('event-modal').innerHTML = `
+            <div class="modal-content"><h2 id="event-modal-title">每月報告</h2><div class="modal-body"><ul id="event-log"></ul></div><button class="modal-close-button">確認</button></div>`;
+        document.getElementById('instructions-modal').innerHTML = `
+            <div class="modal-content"><h2>🎮 歡迎來到防災城市模擬器！</h2><div class="modal-body"><p><strong>玩法:</strong> 點擊右下角的「<strong>➡️ 下一月</strong>」推進時間，點擊左下角的「<strong>⚒️ 建造</strong>」來強化你的城市。祝你好運，市長！</p></div><button class="modal-close-button">開始遊戲</button></div>`;
+        document.getElementById('loan-modal').innerHTML = `
+            <div class="modal-content">
+                <h2>💸 借貸中心</h2>
+                <div class="modal-body">
+                    <p>目前債務: <span id="current-debt">${gameState.debt}</span> 金幣</p>
+                    <p>每月利息: <span id="current-interest">${gameState.loanInterestRate * 100}%</span></p>
+                    <p>可借貸餘額: <span id="loan-available">${gameState.loanLimit - gameState.debt}</span> 金幣</p>
+                    <div style="display:flex; align-items:center; gap:10px; margin-top:20px;">
+                        <input type="number" id="loan-amount-input" min="100" value="1000" step="100">
+                        <button onclick="takeLoan()">借款</button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+                        <input type="number" id="repay-amount-input" min="100" value="1000" step="100">
+                        <button onclick="repayLoan()">還款</button>
+                    </div>
+                </div>
+                <button class="modal-close-button">關閉</button>
+            </div>`;
+        updateUI();
+    }
+
+    function updateUI() {
+        document.getElementById('month-stat').innerText = `📅 第 ${gameState.currentMonth} 月`;
+        document.getElementById('gold-stat').innerText = `💰 金幣: ${gameState.gold}`;
+        const totalPopulation = gameState.population.plains + gameState.population.mountain;
+        document.getElementById('population-stat').innerText = `🧑‍🤝‍🧑 總人口: ${totalPopulation}`;
+        
+        const debtStat = document.getElementById('debt-stat');
+        if (gameState.debt > 0) {
+            debtStat.style.display = 'flex';
+            debtStat.innerText = `💸 債務: ${gameState.debt}`;
+        } else {
+            debtStat.style.display = 'none';
+        }
+
+        document.getElementById('plains-population').innerText = gameState.population.plains;
+        document.getElementById('plains-homeless').innerText = gameState.homeless.plains;
+        document.getElementById('plains-sick').innerText = gameState.sickness.plains.length;
+        document.getElementById('plains-damaged-houses').innerText = gameState.damagedHouses.plains;
+        
+        document.getElementById('mountains-population').innerText = gameState.population.mountain;
+        document.getElementById('mountains-homeless').innerText = gameState.homeless.mountain;
+        document.getElementById('mountains-sick').innerText = gameState.sickness.mountain.length;
+        document.getElementById('mountains-damaged-houses').innerText = gameState.damagedHouses.mountain;
+
+        const plainsBuildingsDiv = document.getElementById('plains-buildings');
+        const mountainsBuildingsDiv = document.getElementById('mountains-buildings');
+
+        plainsBuildingsDiv.innerHTML = '';
+        mountainsBuildingsDiv.innerHTML = '';
+
+        for (const houseKey in houseMaster) {
+            const houseInfo = houseMaster[houseKey];
+            const houseId = houseInfo.id;
+            
+            for (let i = 0; i < gameState.buildings.plains[houseId]; i++) {
+                const icon = document.createElement('span');
+                icon.className = 'building-icon';
+                icon.innerText = houseInfo.icon;
+                icon.title = houseInfo.name;
+                plainsBuildingsDiv.appendChild(icon);
+            }
+            
+            for (let i = 0; i < gameState.buildings.mountain[houseId]; i++) {
+                const icon = document.createElement('span');
+                icon.className = 'building-icon';
+                icon.innerText = houseInfo.icon;
+                icon.title = houseInfo.name;
+                mountainsBuildingsDiv.appendChild(icon);
+            }
+        }
+        for (let i = 0; i < gameState.damagedHouses.plains; i++) {
+            const icon = document.createElement('span');
+            icon.className = 'building-icon';
+            icon.innerText = '🏚️';
+            icon.title = '損壞的房屋';
+            plainsBuildingsDiv.appendChild(icon);
+        }
+        for (let i = 0; i < gameState.damagedHouses.mountain; i++) {
+            const icon = document.createElement('span');
+            icon.className = 'building-icon';
+            icon.innerText = '🏚️';
+            icon.title = '損壞的房屋';
+            mountainsBuildingsDiv.appendChild(icon);
+        }
+
+        // --- 新增：動態生成設施圖示 ---
+        for (const facilityKey in facilityMaster) {
+            const facilityInfo = facilityMaster[facilityKey];
+            const facilityId = facilityInfo.id;
+
+            // 顯示平原設施
+            for (let i = 0; i < gameState.facilities.plains[facilityId]; i++) {
+                const icon = document.createElement('span');
+                icon.className = 'facility-icon';
+                icon.innerText = facilityInfo.icon;
+                icon.title = facilityInfo.name + ' (平原)';
+                plainsBuildingsDiv.appendChild(icon);
+            }
+            // 顯示山地設施
+            for (let i = 0; i < gameState.facilities.mountain[facilityId]; i++) {
+                const icon = document.createElement('span');
+                icon.className = 'facility-icon';
+                icon.innerText = facilityInfo.icon;
+                icon.title = facilityInfo.name + ' (山地)';
+                mountainsBuildingsDiv.appendChild(icon);
+            }
+        }
+    }
+    
+    function buildItems(itemId, quantity, area) {
+        quantity = parseInt(quantity, 10);
+        if (isNaN(quantity) || quantity <= 0) { alert("請輸入有效的數量！"); return; }
+
+        if (itemId.startsWith('house')) {
+            const cost = houseMaster[Object.keys(houseMaster).find(k => houseMaster[k].id === itemId)].cost;
+            const totalCost = cost * quantity;
+            if (gameState.gold < totalCost) { alert(`金幣不足！需要 ${totalCost}, 你只有 ${gameState.gold}`); return; }
+            gameState.gold -= totalCost;
+            gameState.buildings[area][itemId] += quantity; // 房屋只在指定區域建造
+            gameState.eventLog.push(`🏠 在${area === 'plains' ? '平地' : '山地'}建造了 ${quantity} 棟 ${houseMaster[Object.keys(houseMaster).find(k => houseMaster[k].id === itemId)].name}。`);
+        } else if (itemId === 'shelter') {
+             const cost = facilityMaster["避難中心"].cost;
+             const totalCost = cost * quantity;
+             if (gameState.gold < totalCost) { alert(`金幣不足！需要 ${totalCost}, 你只有 ${gameState.gold}`); return; }
+             gameState.gold -= totalCost; 
+             gameState.facilities[area].shelter += quantity; // 避難中心按區域建造
+             gameState.eventLog.push(`🏕️ 在${area === 'plains' ? '平地' : '山地'}建造了 ${quantity} 個避難中心。`);
+        }
+        updateUI();
+        populateBuildModal();
+    }
+
+    function repairHouses(area, quantity) {
+        quantity = parseInt(quantity, 10);
+        if (isNaN(quantity) || quantity <= 0) { alert("請輸入有效的數量！"); return; }
+        if (quantity > gameState.damagedHouses[area]) { alert(`${area === 'plains' ? '平地' : '山地'}沒有那麼多損壞房屋可供修復！`); return; }
+
+        const repairCostPerHouse = 500;
+        const totalRepairCost = repairCostPerHouse * quantity;
+
+        if (gameState.gold < totalRepairCost) { alert(`金幣不足！需要 ${totalRepairCost}, 你只有 ${gameState.gold}`); return; }
+
+        gameState.gold -= totalRepairCost;
+        gameState.damagedHouses[area] -= quantity;
+        gameState.buildings[area].house1 += quantity;
+        gameState.eventLog.push(`🛠️ 修復了 ${quantity} 棟 ${area === 'plains' ? '平地' : '山地'}的房屋。`);
+        updateUI();
+        populateBuildModal();
+    }
+
+
+    function upgradeFacility(facilityId, area) { // 接收 area 參數
+        const facility = facilityMaster[Object.keys(facilityMaster).find(k => facilityMaster[k].id === facilityId)];
+        
+        // 檢查該區域的設施等級
+        if (gameState.facilities[area][facilityId] >= 3) { 
+            alert(`${facility.name} (${area === 'plains' ? '平地' : '山地'}) 已達最高等級！`); 
+            return; 
+        }
+
+        const cost = facility.cost;
+        if (gameState.gold < cost) { alert(`金幣不足！需要 ${cost}, 你只有 ${gameState.gold}`); return; }
+        
+        gameState.gold -= cost; 
+        gameState.facilities[area][facilityId]++; // 設施按區域升級
+        gameState.eventLog.push(`⬆️ 在${area === 'plains' ? '平地' : '山地'}升級了 ${facility.name} 到 ${gameState.facilities[area][facilityId]} 階。`);
+        updateUI(); 
+        populateBuildModal();
+    }
+
+    function takeLoan() {
+        let amount = parseInt(document.getElementById('loan-amount-input').value, 10);
+        if (isNaN(amount) || amount <= 0) { alert("請輸入有效的借貸金額！"); return; }
+        if (gameState.debt + amount > gameState.loanLimit) { alert(`借貸總額不能超過上限 ${gameState.loanLimit} 金幣！`); return; }
+
+        gameState.gold += amount;
+        gameState.debt += amount;
+        gameState.eventLog.push(`💸 借款 ${amount} 金幣，當前債務 ${gameState.debt} 金幣。`);
+        updateUI();
+        populateLoanModal();
+    }
+
+    function repayLoan() {
+        let amount = parseInt(document.getElementById('repay-amount-input').value, 10);
+        if (isNaN(amount) || amount <= 0) { alert("請輸入有效的還款金額！"); return; }
+        if (amount > gameState.debt) { amount = gameState.debt; }
+        if (gameState.gold < amount) { alert(`金幣不足以支付 ${amount} 金幣的還款！`); return; }
+
+        gameState.gold -= amount;
+        gameState.debt -= amount;
+        gameState.eventLog.push(`✅ 還款 ${amount} 金幣，剩餘債務 ${gameState.debt} 金幣。`);
+        updateUI();
+        populateLoanModal();
+    }
+
+    function runMonthlySimulation() {
+        if (gameState.population.plains <= 0 && gameState.population.mountain <= 0) { showEventModal("遊戲結束", ["所有人都死亡了... 城市毀滅！"]); return; }
+        if (gameState.currentMonth >= 12) { showEventModal("遊戲結束", ["恭喜你，成功撐過了12個月！你的城市繁榮昌盛！"]); return; }
+        
+        gameState.currentMonth++; 
+        gameState.eventLog = []; 
+        
+        // 避難中心在當月產生效果後清空
+        gameState.facilities.plains.shelter = 0; 
+        gameState.facilities.mountain.shelter = 0; 
+        gameState.facilities.global.shelter = 0; 
+
+        // 更新全域設施總數
+        gameState.facilities.global.hospital = gameState.facilities.plains.hospital + gameState.facilities.mountain.hospital;
+        gameState.facilities.global.earthquakeWarning = gameState.facilities.plains.earthquakeWarning + gameState.facilities.mountain.earthquakeWarning;
+        // 避難中心總數在每月模擬開始時歸零，在事件中（如人口遷徙）會臨時增加。
+        // 所以這裡不需要從兩區設施累加，它是一個「臨時庇護」的概念。
+        // 如果您希望避難中心是永久建築並有持續效果，需要調整其在 gameState 中的管理方式。
+        // 但目前遊戲邏輯中，避難中心是在災害發生後提供臨時住所，下次災害發生前會被「清空」。
+        // 如果避難中心是被建造的，那它應該是永久的，所以這裡修正為累加
+        gameState.facilities.global.shelter = gameState.facilities.plains.shelter + gameState.facilities.mountain.shelter;
+
+
+        // 災害與事件處理
+        let isRain = false, isHeavyRain = false; 
+        const monthMod12 = gameState.currentMonth % 12 || 12; 
+        let rainChance = 0.4;
+        if ([5, 6, 7, 8].includes(monthMod12)) rainChance = 0.65;
+        if (Math.random() < rainChance) { 
+            isRain = true; 
+            if ([7, 8].includes(monthMod12) && Math.random() < 0.8) { 
+                isHeavyRain = true; 
+                gameState.eventLog.push("🌩️ 本月為暴雨！"); 
+                // gameState.rainCount = 0; // 這行不應該在這裡，暴雨後雨量應該繼續累積
+            } else { 
+                gameState.eventLog.push("🌧️ 本月有下雨。"); 
+            }
+            gameState.rainCount++; // 無論大小雨，雨量都累積
+        } else { 
+            gameState.rainCount = 0; // 沒有下雨則重置
+        }
+
+        let hadEarthquake = false; 
+        if (Math.random() < 0.3) { 
+            hadEarthquake = true; 
+            const isMajor = Math.random() < 0.15; 
+            let earthquakeMsg = isMajor ? "💥 發生【大地震】！" : "🌐 發生【地震】！"; 
+            // 地震預警系統效果現在來自全域統計
+            let reduction = 1 - (0.2 * gameState.facilities.global.earthquakeWarning); 
+            // 地震對房屋的影響現在只針對一級房屋，方便修復
+            let damageFactor = isMajor ? 0.4 : 0.2; 
+            let finalDamage = damageFactor * reduction; 
+
+            // 計算兩區房屋損壞量
+            const plainsHousesToDestroy = Math.round(gameState.buildings.plains.house1 * finalDamage);
+            const mountainHousesToDestroy = Math.round(gameState.buildings.mountain.house1 * finalDamage);
+
+            gameState.buildings.plains.house1 -= plainsHousesToDestroy;
+            gameState.damagedHouses.plains += plainsHousesToDestroy;
+            gameState.buildings.mountain.house1 -= mountainHousesToDestroy;
+            gameState.damagedHouses.mountain += mountainHousesToDestroy;
+
+            // 計算死亡人數
+            let deaths = Math.round((gameState.population.plains + gameState.population.mountain) * finalDamage * 0.1); 
+            deaths = Math.max(0, deaths - gameState.facilities.global.shelter * 5); // 避難中心減少死亡
+
+            gameState.population.plains -= Math.round(deaths / 2); 
+            gameState.population.mountain -= Math.round(deaths / 2); 
+            earthquakeMsg += ` 造成了設施損毀與 ${deaths} 人死亡，${plainsHousesToDestroy + mountainHousesToDestroy} 棟房屋損壞。`; 
+            gameState.eventLog.push(earthquakeMsg); 
+        }
+
+        let isSoilLoose = (gameState.rainCount >= 3) || hadEarthquake; 
+        if (isSoilLoose || isHeavyRain) { 
+            // 擋土牆效果只在山地設施中計算
+            let reduction = 1 - (0.3 * gameState.facilities.mountain.retainingWall); 
+            let damageFactor = isHeavyRain ? 0.5 : 0.2; 
+            let finalDamage = damageFactor * reduction; 
+            let deaths = Math.round(gameState.population.mountain * finalDamage); 
+            deaths = Math.max(0, deaths - gameState.facilities.global.shelter * 5); // 避難中心減少死亡
+            gameState.population.mountain -= deaths; 
+            
+            let destroyedHouses = Math.round(gameState.buildings.mountain.house1 * finalDamage); 
+            gameState.buildings.mountain.house1 -= destroyedHouses;
+            gameState.damagedHouses.mountain += destroyedHouses;
+
+            gameState.eventLog.push(`⛰️ 發生土石流！山區死亡 ${deaths} 人，損毀 ${destroyedHouses} 棟房屋。`); 
+            // gameState.rainCount = 0; // 土石流後雨量不一定歸零
+        }
+
+        if (gameState.rainCount >= 3 || isHeavyRain) { 
+            // 水壩效果只在平地設施中計算
+            let reduction = 1 - (0.33 * gameState.facilities.plains.dam); 
+            let damageFactor = isHeavyRain ? 0.3 : 0.15; 
+            let finalDamage = damageFactor * reduction; 
+            let deaths = Math.round(gameState.population.plains * finalDamage); 
+            deaths = Math.max(0, deaths - gameState.facilities.global.shelter * 5); // 避難中心減少死亡
+            gameState.population.plains -= deaths; 
+            
+            let destroyedHouses = Math.round(gameState.buildings.plains.house1 * finalDamage); 
+            gameState.buildings.plains.house1 -= destroyedHouses; 
+            gameState.damagedHouses.plains += destroyedHouses;
+
+            gameState.eventLog.push(`🌊 發生淹水！平原死亡 ${deaths} 人，損毀 ${destroyedHouses} 棟房屋。`); 
+            // gameState.rainCount = 0; // 淹水後雨量不一定歸零
+        }
+
+        if (gameState.currentMonth === gameState.majorDisasterMonth) { 
+            gameState.eventLog.push(`🆘 警告！本月發生【${gameState.majorDisasterType}】！！`); 
+            if (gameState.majorDisasterType === "火山爆發") { 
+                let deaths = Math.round(gameState.population.mountain * 0.75); 
+                deaths = Math.max(0, deaths - gameState.facilities.global.shelter * 10); // 避難中心對重大災害的死亡影響更大
+                gameState.population.mountain -= deaths; 
+                
+                // 所有山地房屋損壞
+                let totalMountainHouses = gameState.buildings.mountain.house1 + gameState.buildings.mountain.house2 + gameState.buildings.mountain.house3;
+                gameState.damagedHouses.mountain += totalMountainHouses;
+                gameState.buildings.mountain.house1 = 0; 
+                gameState.buildings.mountain.house2 = 0; 
+                gameState.buildings.mountain.house3 = 0; 
+                
+                // 火山爆發也會破壞山地設施
+                for (const facilityId in gameState.facilities.mountain) {
+                    gameState.facilities.mountain[facilityId] = 0;
+                }
+                gameState.eventLog.push(`🌋 山地被火山灰覆蓋，死亡 ${deaths} 人，建築與設施全毀！`); 
+            } else { // 隕石掉落 或 超級颱風
+                let deaths = Math.round((gameState.population.plains + gameState.population.mountain) * 0.3); 
+                deaths = Math.max(0, deaths - gameState.facilities.global.shelter * 10); // 避難中心對重大災害的死亡影響更大
+                gameState.population.plains -= Math.round(deaths / 2); 
+                gameState.population.mountain -= Math.round(deaths / 2); 
+                
+                const plainsHousesDestroyed = Math.round((gameState.buildings.plains.house1 + gameState.buildings.plains.house2 + gameState.buildings.plains.house3) * 0.5);
+                const mountainHousesDestroyed = Math.round((gameState.buildings.mountain.house1 + gameState.buildings.mountain.house2 + gameState.buildings.mountain.house3) * 0.5);
+
+                gameState.buildings.plains.house1 -= plainsHousesDestroyed; 
+                gameState.damagedHouses.plains += plainsHousesDestroyed;
+                gameState.buildings.mountain.house1 -= mountainHousesDestroyed; 
+                gameState.damagedHouses.mountain += mountainHousesDestroyed;
+
+                // 隕石或超級颱風對兩區設施造成損壞
+                for (const facilityId in gameState.facilities.plains) {
+                    // 只損毀該區域已有的設施，而不是將所有設施類型都歸零
+                    if (gameState.facilities.plains[facilityId] > 0) {
+                        gameState.facilities.plains[facilityId] = Math.max(0, Math.round(gameState.facilities.plains[facilityId] * 0.5));
+                    }
+                }
+                for (const facilityId in gameState.facilities.mountain) {
+                    if (gameState.facilities.mountain[facilityId] > 0) {
+                        gameState.facilities.mountain[facilityId] = Math.max(0, Math.round(gameState.facilities.mountain[facilityId] * 0.5));
+                    }
+                }
+
+                gameState.eventLog.push(`☄️ 全區遭受重創，總共死亡 ${deaths} 人，${plainsHousesDestroyed + mountainHousesDestroyed} 棟房屋損壞，部分設施損毀！`); 
+            }
+            // 重置下一個重大災害月份和類型
+            gameState.majorDisasterMonth = gameState.currentMonth + Math.floor(Math.random() * 6) + 6; // 下一個災害在未來6-11個月內
+            gameState.majorDisasterType = ["火山爆發", "隕石掉落", "超級颱風"][Math.floor(Math.random() * 3)];
+        }
+
+        handleRandomEvents();
+
+        for (const area of ['plains', 'mountain']) { 
+            const healthyPop = gameState.population[area] - gameState.sickness[area].length; 
+            const newSick = Math.floor(healthyPop * (area === 'mountain' ? 0.08 : 0.05)); 
+            for(let i=0; i<newSick; i++) gameState.sickness[area].push(0); 
+            for(let i=0; i<gameState.homeless[area]; i++) gameState.sickness[area].push(0); 
+        }
+
+        let sickDeaths = { plains: 0, mountain: 0 }; 
+        for (const area of ['plains', 'mountain']) { 
+            let survivors = []; 
+            for (const duration of gameState.sickness[area]) { 
+                if (duration > 3) { 
+                    sickDeaths[area]++; 
+                } else { 
+                    survivors.push(duration + 1); 
+                } 
+            } 
+            gameState.sickness[area] = survivors; 
+            gameState.population[area] -= sickDeaths[area]; 
+        }
+
+        if (sickDeaths.plains > 0) gameState.eventLog.push(`☠️ 平地有 ${sickDeaths.plains} 人因病死亡。`); 
+        if (sickDeaths.mountain > 0) gameState.eventLog.push(`☠️ 山地有 ${sickDeaths.mountain} 人因病死亡。`);
+        
+        // 醫院治療能力現在來自全域統計
+        let capacity = [0, 10, 14, 20][gameState.facilities.global.hospital] || 0; 
+        let treated = 0; 
+        for (const area of ['plains', 'mountain']) { 
+            let treatable = Math.min(gameState.sickness[area].length, capacity - treated); 
+            gameState.sickness[area].splice(0, treatable); 
+            treated += treatable; 
+        } 
+        if (treated > 0) gameState.eventLog.push(`🏥 醫院本月治療了 ${treated} 位病人。`);
+        
+        let income = 0; 
+        for (const area of ['plains', 'mountain']) { 
+            const pop = gameState.population[area]; 
+            const sick = gameState.sickness[area].length; 
+            const base = area === 'plains' ? (pop - sick) * 100 + sick * 50 : (pop - sick) * 200 + sick * 100; 
+            income += base; 
+        }
+        // 農田和礦場收入加成現在來自區域設施總和
+        income *= (1 + (0.15 * gameState.facilities.plains.farm)); 
+        income *= (1 + (0.3 * gameState.facilities.mountain.mine)); 
+        income = Math.round(income); 
+        gameState.gold += income; 
+        gameState.eventLog.push(`💰 本月總收入為 ${income} 金幣。`);
+
+        // 處理債務利息
+        if (gameState.debt > 0) {
+            const interest = Math.round(gameState.debt * gameState.loanInterestRate);
+            gameState.gold -= interest;
+            gameState.eventLog.push(`💸 支付了 ${interest} 金幣的借貸利息。`);
+            if (gameState.gold < 0) {
+                const deficit = Math.abs(gameState.gold);
+                gameState.debt += deficit;
+                gameState.gold = 0;
+                gameState.eventLog.push(`🚨 資金不足，債務增加 ${deficit} 金幣。`);
+            }
+        }
+        
+        for (const area of ['plains', 'mountain']) { 
+            const healthy = gameState.population[area] - gameState.sickness[area].length; 
+            const growth = Math.round(healthy * (area === 'plains' ? 0.15 : 0.2)); 
+            gameState.population[area] += growth; 
+            if(growth > 0) gameState.eventLog.push(`👶 ${area === 'plains' ? '平地' : '山地'}人口自然增長了 ${growth} 人。`); 
+        }
+
+        for (const area of ['plains', 'mountain']) { 
+            const capacity = gameState.buildings[area].house1 * 5 + gameState.buildings[area].house2 * 10 + gameState.buildings[area].house3 * 20; 
+            gameState.homeless[area] = Math.max(0, gameState.population[area] - capacity); 
+            if (gameState.homeless[area] > 0) { 
+                gameState.eventLog.push(`🚫 ${area === 'plains' ? '平地' : '山地'}有 ${gameState.homeless[area]} 人居無定所！`); 
+            } 
+        }
+        
+        for (const area of ['plains', 'mountain']) { gameState.population[area] = Math.max(0, gameState.population[area]); }
+        
+        // 確保彈出視窗顯示
+        updateUI(); 
+        showEventModal(`第 ${gameState.currentMonth} 月報告`, gameState.eventLog);
+    }
+
+    function handleRandomEvents() {
+        const randomEventChance = 0.2;
+        if (Math.random() < randomEventChance) {
+            const eventTypes = [
+                "mildSickness",
+                "smallFire",
+                "resourceShortage",
+                "populationBoom",
+                "goldVein",
+                "medicalBreakthrough",
+                "noEvent" // 新增一個「沒有特殊事件」的選項，讓遊戲不那麼頻繁地發生事
+            ];
+            const chosenEvent = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+
+            switch (chosenEvent) {
+                case "mildSickness":
+                    const sickPop = Math.round((gameState.population.plains + gameState.population.mountain) * 0.03);
+                    for (let i = 0; i < sickPop; i++) {
+                        if (Math.random() < 0.6) gameState.sickness.plains.push(0);
+                        else gameState.sickness.mountain.push(0);
+                    }
+                    if (sickPop > 0) { // 只有當有人生病時才記錄事件
+                        gameState.eventLog.push(`😷 城市爆發輕微傳染病，約 ${sickPop} 人生病。`);
+                    } else {
+                        // 如果沒有人生病，則視為沒有特殊事件
+                        gameState.eventLog.push(`幸運的是，本月沒有發生什麼特別的事。`);
+                    }
+                    break;
+                case "smallFire":
+                    const affectedArea = Math.random() < 0.5 ? 'plains' : 'mountain';
+                    // 確保有房屋可以被燒毀
+                    const availableHouses = gameState.buildings[affectedArea].house1 + gameState.buildings[affectedArea].house2 + gameState.buildings[affectedArea].house3;
+                    if (availableHouses > 0) {
+                        const housesBurned = Math.min(Math.ceil(availableHouses * 0.1), 5); // 最多燒毀5棟
+                        if (housesBurned > 0) {
+                            // 優先從低級房屋燒毀，並轉為損壞房屋
+                            let remainingToBurn = housesBurned;
+                            if (gameState.buildings[affectedArea].house1 >= remainingToBurn) {
+                                gameState.buildings[affectedArea].house1 -= remainingToBurn;
+                                gameState.damagedHouses[affectedArea] += remainingToBurn;
+                                remainingToBurn = 0;
+                            } else {
+                                gameState.damagedHouses[affectedArea] += gameState.buildings[affectedArea].house1;
+                                remainingToBurn -= gameState.buildings[affectedArea].house1;
+                                gameState.buildings[affectedArea].house1 = 0;
+                            }
+                            if (remainingToBurn > 0 && gameState.buildings[affectedArea].house2 >= remainingToBurn) {
+                                gameState.buildings[affectedArea].house2 -= remainingToBurn;
+                                gameState.damagedHouses[affectedArea] += remainingToBurn;
+                                remainingToBurn = 0;
+                            } else if (remainingToBurn > 0) {
+                                gameState.damagedHouses[affectedArea] += gameState.buildings[affectedArea].house2;
+                                remainingToBurn -= gameState.buildings[affectedArea].house2;
+                                gameState.buildings[affectedArea].house2 = 0;
+                            }
+                            if (remainingToBurn > 0 && gameState.buildings[affectedArea].house3 >= remainingToBurn) {
+                                gameState.buildings[affectedArea].house3 -= remainingToBurn;
+                                gameState.damagedHouses[affectedArea] += remainingToBurn;
+                                remainingToBurn = 0;
+                            } else if (remainingToBurn > 0) {
+                                gameState.damagedHouses[affectedArea] += gameState.buildings[affectedArea].house3;
+                                remainingToBurn -= gameState.buildings[affectedArea].house3;
+                                gameState.buildings[affectedArea].house3 = 0;
+                            }
+                            
+                            gameState.eventLog.push(`🔥 ${affectedArea === 'plains' ? '平地' : '山地'}發生小型火災，${housesBurned} 棟房屋損壞。`);
+                        } else {
+                            gameState.eventLog.push(`幸運的是，本月沒有發生什麼特別的事。`);
+                        }
+                    } else {
+                         gameState.eventLog.push(`幸運的是，本月沒有發生什麼特別的事。`);
+                    }
+                    break;
+                case "resourceShortage":
+                    const incomeReduction = Math.round(gameState.gold * 0.1);
+                    gameState.gold -= incomeReduction;
+                    gameState.eventLog.push(`📉 本月遭遇資源短缺，收入減少 ${incomeReduction} 金幣。`);
+                    break;
+                case "populationBoom":
+                    const newPopulation = Math.round((gameState.population.plains + gameState.population.mountain) * 0.05);
+                    gameState.population.plains += Math.round(newPopulation / 2);
+                    gameState.population.mountain += Math.round(newPopulation / 2);
+                    gameState.eventLog.push(`🎉 大量人口遷入，城市新增 ${newPopulation} 人！`);
+                    break;
+                case "goldVein":
+                    const bonusGold = Math.floor(Math.random() * 2000) + 1000;
+                    gameState.gold += bonusGold;
+                    gameState.eventLog.push(`✨ 挖到金礦脈，額外獲得 ${bonusGold} 金幣！`);
+                    break;
+                case "medicalBreakthrough":
+                    const totalSick = gameState.sickness.plains.length + gameState.sickness.mountain.length;
+                    const treatedPatients = Math.min(Math.floor(totalSick * 0.3), 20);
+                    if (treatedPatients > 0) {
+                        for (let i = 0; i < treatedPatients; i++) {
+                            // 優先治療平地病人，如果平地沒病人了就治療山地
+                            if (gameState.sickness.plains.length > 0) {
+                                gameState.sickness.plains.pop();
+                            } else if (gameState.sickness.mountain.length > 0) {
+                                gameState.sickness.mountain.pop();
+                            } else {
+                                break;
+                            }
+                        }
+                        gameState.eventLog.push(`👨‍⚕️ 醫療技術突破，額外治癒了 ${treatedPatients} 位病人！`);
+                    } else {
+                        gameState.eventLog.push(`幸運的是，本月沒有發生什麼特別的事。`);
+                    }
+                    break;
+                case "noEvent":
+                default:
+                    gameState.eventLog.push(`幸運的是，本月沒有發生什麼特別的事。`);
+            }
+        }
+    }
+
+
+    function populateBuildModal() { 
+        const body = document.getElementById('build-modal-body'); 
+        
+        let houseBuildHtml = `<div class="build-category"><h3>🏠 建造房屋</h3>`;
+        for (const hKey in houseMaster) {
+            const h = houseMaster[hKey];
+            houseBuildHtml += `
+                <div class="build-item">
+                    <div>
+                        <div class="build-item-name">${h.name}</div>
+                        <div class="build-item-cost">成本: ${h.cost}</div>
+                    </div>
+                    <div class="build-controls">
+                        <input type="number" id="input-${h.id}-plains" min="1" value="1">
+                        <button onclick="buildItems('${h.id}', document.getElementById('input-${h.id}-plains').value, 'plains')">平地建造</button>
+                        <input type="number" id="input-${h.id}-mountain" min="1" value="1">
+                        <button onclick="buildItems('${h.id}', document.getElementById('input-${h.id}-mountain').value, 'mountain')">山地建造</button>
+                    </div>
+                </div>`;
+        }
+        houseBuildHtml += `</div>`;
+
+        let facilityUpgradeHtml = `<div class="build-category"><h3>🔧 升級設施</h3>`;
+        for (const fKey in facilityMaster) {
+            const f = facilityMaster[fKey];
+            if (f.id === 'shelter') { // 避難中心單獨處理建造
+                facilityUpgradeHtml += `
+                    <div class="build-item">
+                        <div>
+                            <div class="build-item-name">${f.name}</div>
+                            <div class="build-item-cost">成本: ${f.cost}</div>
+                        </div>
+                        <div class="build-controls">
+                            <input type="number" id="input-${f.id}-plains" min="1" value="1">
+                            <button onclick="buildItems('${f.id}', document.getElementById('input-${f.id}-plains').value, 'plains')">平地建造</button>
+                            <input type="number" id="input-${f.id}-mountain" min="1" value="1">
+                            <button onclick="buildItems('${f.id}', document.getElementById('input-${f.id}-mountain').value, 'mountain')">山地建造</button>
+                        </div>
+                    </div>`;
+                continue;
+            }
+
+            let plainsButton = '';
+            let mountainButton = '';
+
+            // 根據設施的 area 屬性生成按鈕
+            if (f.area === 'plains' || f.area === 'any') {
+                plainsButton = `<button class="upgrade-button" onclick="upgradeFacility('${f.id}', 'plains')" ${gameState.facilities.plains[f.id] >= 3 ? 'disabled' : ''}>平地升級 (Lv:${gameState.facilities.plains[f.id]})</button>`;
+            }
+            if (f.area === 'mountain' || f.area === 'any') {
+                mountainButton = `<button class="upgrade-button" onclick="upgradeFacility('${f.id}', 'mountain')" ${gameState.facilities.mountain[f.id] >= 3 ? 'disabled' : ''}>山地升級 (Lv:${gameState.facilities.mountain[f.id]})</button>`;
+            }
+
+            facilityUpgradeHtml += `
+                <div class="build-item">
+                    <div>
+                        <div class="build-item-name">${f.name}</div>
+                        <div class="build-item-cost">成本: ${f.cost}</div>
+                    </div>
+                    <div class="build-controls">
+                        ${plainsButton}
+                        ${mountainButton}
+                    </div>
+                </div>`;
+        }
+        facilityUpgradeHtml += `</div>`;
+
+
+        let repairHtml = `
+        <div class="build-category">
+            <h3>🛠️ 修復房屋</h3>
+            <div class="build-item">
+                <div>
+                    <div class="build-item-name">修復平地房屋</div>
+                    <div class="build-item-cost">成本: 500 / 棟</div>
+                </div>
+                <div class="build-controls">
+                    <input type="number" id="input-repair-plains" min="1" value="1" max="${gameState.damagedHouses.plains}">
+                    <button class="repair-button" onclick="repairHouses('plains', document.getElementById('input-repair-plains').value)" ${gameState.damagedHouses.plains === 0 ? 'disabled' : ''}>修復 (${gameState.damagedHouses.plains} 損壞)</button>
+                </div>
+            </div>
+            <div class="build-item">
+                <div>
+                    <div class="build-item-name">修復山地房屋</div>
+                    <div class="build-item-cost">成本: 500 / 棟</div>
+                </div>
+                <div class="build-controls">
+                    <input type="number" id="input-repair-mountains" min="1" value="1" max="${gameState.damagedHouses.mountain}">
+                    <button class="repair-button" onclick="repairHouses('mountain', document.getElementById('input-repair-mountains').value)" ${gameState.damagedHouses.mountain === 0 ? 'disabled' : ''}>修復 (${gameState.damagedHouses.mountain} 損壞)</button>
+                </div>
+            </div>
+        </div>`;
+        
+        body.innerHTML = houseBuildHtml + facilityUpgradeHtml + repairHtml;
+    }
+
+    function populateLoanModal() {
+        document.getElementById('current-debt').innerText = gameState.debt;
+        document.getElementById('loan-available').innerText = gameState.loanLimit - gameState.debt;
+        document.getElementById('loan-amount-input').max = gameState.loanLimit - gameState.debt;
+        document.getElementById('repay-amount-input').max = gameState.debt;
+    }
+
+    // 新增 showEventModal 函數
+    function showEventModal(title, events) {
+        const modal = document.getElementById('event-modal');
+        const titleElement = modal.querySelector('h2');
+        const eventLogList = modal.querySelector('#event-log');
+
+        titleElement.innerText = title;
+        eventLogList.innerHTML = ''; // 清空之前的事件
+
+        if (events.length === 0) {
+            eventLogList.innerHTML = '<li>本月風平浪靜，沒有特別事件發生。</li>';
+        } else {
+            events.forEach(event => {
+                const li = document.createElement('li');
+                li.innerText = event;
+                eventLogList.appendChild(li);
+            });
+        }
+        modal.classList.add('visible');
+    }
+
+    document.getElementById('build-button').addEventListener('click', () => { 
+        populateBuildModal(); 
+        document.getElementById('build-modal').classList.add('visible'); 
+    });
+    document.getElementById('next-month-button').addEventListener('click', runMonthlySimulation);
+
+    document.getElementById('loan-button').addEventListener('click', () => {
+        populateLoanModal();
+        document.getElementById('loan-modal').classList.add('visible');
+    });
+
+    document.querySelectorAll('.modal-overlay').forEach(modal => { 
+        modal.addEventListener('click', (e) => { 
+            if (e.target.classList.contains('modal-overlay') || e.target.classList.contains('modal-close-button')) { 
+                modal.classList.remove('visible'); 
+            } 
+        }); 
+    });
+    resetGame();
+    </script>
+</body>
+</html>
